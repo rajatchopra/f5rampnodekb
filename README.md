@@ -146,3 +146,16 @@ ovs-ofctl -O OpenFlow13 add-flow br0 \
 echo " - All done."
 ```
 
+That may look like an overwhelming script, but there are three things that it does:
+
+1. Recreate the ipip tunnel between the F5 node and the ramp node (the ramp node is where this script should be run)
+2. Cleanup the OVS rules (by restarting the openshift-node process)
+3. Add the extra OVS rules for managing the F5 traffic
+
+One may be tempted to just put that script in a systemd unit file and be done with the headache of reboot survival forever, but some key variables need to be understood and set accordingly. Just a handful of them, really -
+
+1. ${OPENSHIFT_F5_TUNNEL_IP} - This is the IP address of the tunnel device on the F5 device. Default value:- "10.3.91.216"
+2. ${OPENSHIFT_RAMP_TUNNEL_IP} - This is the IP address chosen for the tunnel device on the ramp node. Default value:-"10.3.91.217". These addresses are just any valid L3 addresses that the underlay network will accept.
+3. ${OPENSHIFT_CLUSTER_NETWORK} - This is the pod subnet that the cluster is operating with. i.e. all pods belong to this CIDR. Default value:-"10.128.0.0/14"
+4. ${OPENSHIFT_NODE_SERVICE} - Name of the systemd service for the openshift node process. Default value :- "openshift-node"
+5. ${OPENSHIFT_SDN_TAP1_ADDR} - IP address of the 'tun0' device on the ramp node as setup by openshift-sdn lease. There is no default value. If found unset, it will be picked up automatically by this script. Set it up only if you want to override it (usually not needed).
