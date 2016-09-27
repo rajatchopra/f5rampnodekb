@@ -187,8 +187,6 @@ After=docker.target network.target
 [Service]
 ExecStart=${exec_start}
 WorkingDirectory=${work_dir}
-Restart=on-failure
-RestartSec=10s
 
 [Install]
 WantedBy=multi-user.target
