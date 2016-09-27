@@ -4,6 +4,7 @@ A ramp node is needed to fully integrate the F5 load balancer with an OpenShift 
 
 OpenShift documentation describes the steps required to setup the ramp node [here](https://docs.openshift.org/latest/install_config/routing_from_edge_lb.html#establishing-a-tunnel-using-a-ramp-node). But one of the key issues is persistence of the setup i.e. the ipip tunnel, the Openvswitch rules etc do not survive a reboot of the machine. This article is about putting together the steps into a nifty script that one can just setup in an init script e.g. a systemd unit.
 
+## The script
 ```
 #!/bin/bash
 set -e
@@ -152,6 +153,8 @@ That may look like an overwhelming script, but there are three things that it do
 2. Cleanup the OVS rules (by restarting the openshift-node process)
 3. Add the extra OVS rules for managing the F5 traffic
 
+## Using the script
+
 One may be tempted to just put that script in a systemd unit file and be done with the headache of reboot survival forever, but some key variables need to be understood and set accordingly. Just a handful of them, really -
 
 1. ${OPENSHIFT_F5_TUNNEL_IP} - This is the IP address of the tunnel device on the F5 device. Default value:- "10.3.91.216"
@@ -162,7 +165,7 @@ One may be tempted to just put that script in a systemd unit file and be done wi
 
 Set these as environment variables to the script, or fix the default/overriding values manually in the script and we should be reboot-ready. Oh and one last thing - there is one argument to the script, the IP address of the F5 node itself.
 
-## systemd-ize
+## systemd-izing the script
 
 Creating the systemd init script should be just simple once we save the script in an executable file (say /usr/libexec/openshift/f5rampnodesetup.sh).
 
