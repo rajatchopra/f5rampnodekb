@@ -159,3 +159,44 @@ One may be tempted to just put that script in a systemd unit file and be done wi
 3. ${OPENSHIFT_CLUSTER_NETWORK} - This is the pod subnet that the cluster is operating with. i.e. all pods belong to this CIDR. Default value:-"10.128.0.0/14"
 4. ${OPENSHIFT_NODE_SERVICE} - Name of the systemd service for the openshift node process. Default value :- "openshift-node"
 5. ${OPENSHIFT_SDN_TAP1_ADDR} - IP address of the 'tun0' device on the ramp node as setup by openshift-sdn lease. There is no default value. If found unset, it will be picked up automatically by this script. Set it up only if you want to override it (usually not needed).
+
+Set these as environment variables to the script, or fix the default/overriding values manually in the script and we should be reboot-ready. Oh and one last thing - there is one argument to the script, the IP address of the F5 node itself.
+
+## systemd-ize
+
+Creating the systemd init script should be just simple once we save the script in an executable file (say /usr/libexec/openshift/f5rampnodesetup.sh).
+
+```
+#!/bin/bash
+
+function systemdize() {
+  local unit_name=$1
+  local description=$2
+  local exec_start=$3
+  local work_dir=$4
+
+  cat <<EOF > "/etc/systemd/system/${unit_name}.service"
+[Unit]
+Description=${description}
+Requires=network.target
+After=docker.target network.target
+
+[Service]
+ExecStart=${exec_start}
+WorkingDirectory=${work_dir}
+Restart=on-failure
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+  systemctl daemon-reload > /dev/null
+  systemctl enable "${unit_name}.service" &> /dev/null
+  systemctl start "${unit_name}.service"
+}
+
+systemdize f5rampsetup "Script to setup the ramp node for F5 integration with openshift-sdn" "/usr/libexec/openshift/f5rampnodesetup.sh" "/"
+```
+
+We should now be reboot happy.
